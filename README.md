@@ -239,15 +239,15 @@ Le menu principal offre 6 modules :
 
 ```text
 PromptOps Console v1.0.0
-----------------------------------------
-[1] Project Scaffold   - New repo setup
-[2] Automation Engine  - CI/CD & scripts
-[3] Docs Generator     - README, guides
-[4] Super-Prompt Studio- Create/optimize
-[5] Health Check       - Lint & validate
-[6] Settings           - Config & prefs
+-----------------------------------------
+[1] Project Scaffold    - New repo setup
+[2] Automation Engine   - CI/CD & scripts
+[3] Docs Generator      - README, guides
+[4] Super-Prompt Studio - Create/optimize
+[5] Health Check        - Lint & validate
+[6] Settings            - Config & prefs
 [0] Exit
-----------------------------------------
+-----------------------------------------
 ```
 
 Chaque option déclenche un questionnaire guidé (≥4 questions) avec :
