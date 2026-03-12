@@ -478,7 +478,7 @@ Nous accueillons les contributions ! Veuillez suivre ces étapes :
 
 #### Description du Problème
 
-Lors de la génération de digests de repository ou de la lecture de fichiers encodés en UTF-8 avec Python sous Windows, vous pouvez rencontrer l'erreur suivante :
+Lors de la génération de digests de repository via la commande **'gitingest.exe'** ou de la lecture de fichiers encodés en UTF-8 avec Python sous Windows, vous pouvez rencontrer l'erreur suivante :
 
 ```text
 Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 2106: character maps to <undefined>
