@@ -25,6 +25,7 @@
 - [CI/CD Pipeline](#-cicd-pipeline)
 - [Security & Best Practices](#-security--best-practices)
 - [Contributing](#-contributing)
+- [Dépannage](#-Dépannage)
 - [License](#-license)
 - [Roadmap v2.0](#-roadmap-v20)
 
