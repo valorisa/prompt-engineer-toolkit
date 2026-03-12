@@ -612,7 +612,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND...
 Fonctionnalités planifiées pour la prochaine version majeure :
 
 | Feature | Description | Priorité |
-|---------|-------------|----------|
+| ------- | ----------- | -------- |
 | 🔌 Plugin Architecture | Extension dynamique des menus CLI via modules externes | Haute |
 | 📊 Telemetry Opt-in | Métriques d'usage anonymisées pour améliorer l'outil | Moyenne |
 | 🔐 Script Signing | Signature PowerShell pour déploiements enterprise | Haute |
