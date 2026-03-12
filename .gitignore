@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+
+# Digest files (output only)
+digest.txt
+full-digest.txt
+*-digest.txt
+
+# Backup files
+*.bak
+backup-encoding/
+
+# Test files (temporary)
+test.txt
