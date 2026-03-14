@@ -636,14 +636,14 @@ Fonctionnalités planifiées pour la prochaine version majeure :
 | 🤖 Model Router | Routage intelligent vers le meilleur LLM selon le prompt | Moyenne |
 | 🌐 i18n Support | Internationalisation complète du CLI (FR, ES, DE, etc.) | Basse |
 
-> 💬 Vous avez une idée pour v2.0 ? Ouvrez une [Discussion](https://github.com/valorisa/prompt-engineer-toolkit/discussions) ou une [Issue](https://github.com/valorisa/prompt-engineer-toolkit/issues).
+> 💬 Vous avez une idée pour v2.0 ? Ouvrez une [Discussion](https://github.com/valorisa/discussions) ou une [Issue](https://github.com/valorisa/prompt-engineer-toolkit/issues).
 
 ---
 
 ## 🆘 Support & Community
 
 - 🐛 **Bug Report** : [New Issue](https://github.com/valorisa/prompt-engineer-toolkit/issues/new?template=bug_report.md)
-- 💡 **Feature Request** : [New Discussion](https://github.com/discussions)
+- 💡 **Feature Request** : [New Discussion](https://github.com/valorisa/prompt-engineer-toolkit/pulls)
 - 📖 **Documentation** : [`docs/`](docs/)
 - 🔄 **Changelog** : Voir les [Releases](https://github.com/valorisa/prompt-engineer-toolkit/releases)
 
