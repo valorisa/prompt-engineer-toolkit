@@ -3,10 +3,17 @@
   "version": "1.0.0",
   "description": "Node.js utilities for prompt-engineer-toolkit",
   "main": "promptops.js",
+  "type": "module",
   "scripts": {
     "test": "node -e \"console.log('Tests passed'); process.exit(0);\"",
-    "lint": "echo 'No linting configured'"
+    "lint": "echo 'No linting configured'",
+    "build": "tsc"
   },
   "author": "prompt-engineer-toolkit",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
 }
