@@ -15,3 +15,17 @@ backup-encoding/
 
 # Test files (temporary)
 test.txt
+# Build artifacts
+dist/
+scripts/node/dist/
+
+# Dependencies
+node_modules/
+scripts/node/node_modules/
+
+# Test results
+testResults.xml
+*.xml
+
+# Backups
+*.bundle
