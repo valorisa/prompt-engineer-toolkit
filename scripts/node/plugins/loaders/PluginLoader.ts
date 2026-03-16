@@ -3,7 +3,7 @@
 import { IPlugin, PluginManifest } from '../interfaces/IPlugin.js';
 import { readdir } from 'fs/promises';
 import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -32,11 +32,13 @@ export class PluginLoader {
    */
   private async loadPlugin(pluginPath: string): Promise<void> {
     try {
-      // 📁 Chemin vers le fichier principal du plugin
-      const pluginFile = join(pluginPath, 'index.js');
-      
-      // 🔌 Import dynamique du module plugin
-      const module = await import(pluginFile);
+    // 📁 Chemin vers le fichier principal du plugin
+    const pluginFile = join(pluginPath, 'index.js');
+    
+    // 🔌 Import dynamique du module plugin
+    // ⚠️ Sur Windows ESM, convertir le chemin en file:// URL
+    const pluginUrl = pathToFileURL(pluginFile).href;
+    const module = await import(pluginUrl);  // ← ✅ Corrigé pour Windows
       
       // 📦 Récupère la classe du plugin (export default ou premier export)
       const PluginClass = module.default || Object.values(module)[0];
