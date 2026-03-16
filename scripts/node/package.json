@@ -5,7 +5,8 @@
   "main": "promptops.js",
   "type": "module",
   "scripts": {
-    "test": "node -e \"console.log('Tests passed'); process.exit(0);\"",
+    "test": "tsx --test --test-reporter=spec \"**/*.test.ts\"",
+    "test:watch": "tsx --test --watch \"**/*.test.ts\"",
     "lint": "echo 'No linting configured'",
     "build": "tsc"
   },
