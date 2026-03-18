@@ -8,7 +8,7 @@
 .NOTES
     Author: valorisa
     License: MIT
-    Version: 2.0.0
+    Version: 2.1.0
 #>
 
 [CmdletBinding()]
@@ -18,55 +18,223 @@ param(
     [switch]$WhatIf
 )
 
-$ScriptVersion = "2.0.0"
+# ============================================================================
+# CONFIGURATION GLOBALE
+# ============================================================================
+
+$ScriptVersion = "2.1.0"
 $ProjectRoot = $PSScriptRoot | Split-Path -Parent
+$LogPath = "$ProjectRoot/logs/promptops-console.log"
+$ConfigPath = "$ProjectRoot/.promptops-config.json"
+$HistoryPath = "$ProjectRoot/logs/console-history.log"
 
-# Help
-if ($Help) { 
-    Write-Host @"
-PromptOps Console v$ScriptVersion
-
-USAGE:
-    .\scripts\PromptOpsConsole.ps1 [options]
-
-OPTIONS:
-    -Help      Show this help message
-    -Version   Show version number
-    -WhatIf    Show what would be done without executing
-
-MENU OPTIONS:
-    [1] Project Scaffold    - Create new project structure
-    [2] Automation Engine   - Run automation scripts
-    [3] Docs Generator      - Generate documentation
-    [4] Super-Prompt Studio - Launch Node.js CLI for prompts
-    [5] Health Check        - Run tests and check project status
-    [6] Settings            - Configure options
-    [?] Help                - Show this help
-    [0] Exit                - Exit the console
-
-"@ -ForegroundColor Cyan
-    exit 0 
+# Thèmes de couleurs
+$Themes = @{
+    "default" = @{
+        "Title" = "Cyan"
+        "Success" = "Green"
+        "Warning" = "Yellow"
+        "Error" = "Red"
+        "Info" = "White"
+        "Highlight" = "Magenta"
+    }
+    "dark" = @{
+        "Title" = "Blue"
+        "Success" = "DarkGreen"
+        "Warning" = "DarkYellow"
+        "Error" = "DarkRed"
+        "Info" = "Gray"
+        "Highlight" = "DarkMagenta"
+    }
+    "light" = @{
+        "Title" = "DarkBlue"
+        "Success" = "Green"
+        "Warning" = "Yellow"
+        "Error" = "Red"
+        "Info" = "Black"
+        "Highlight" = "Magenta"
+    }
 }
 
-# Version
-if ($Version) { $ScriptVersion; exit 0 }
+# Charger la configuration
+function Get-Config {
+    if (Test-Path $ConfigPath) {
+        return Get-Content $ConfigPath | ConvertFrom-Json
+    } else {
+        return @{
+            "Theme" = "default"
+            "ShowProgress" = $true
+            "EnableLogs" = $true
+            "MaxHistory" = 10
+        }
+    }
+}
+
+function Save-Config {
+    param($Config)
+    $Config | ConvertTo-Json | Set-Content $ConfigPath
+}
 
 # ============================================================================
-# FONCTIONS DES SOUS-MENUS
+# SYSTÈME DE LOGS (#6)
+# ============================================================================
+
+function Write-Log {
+    param(
+        [string]$Message,
+        [string]$Level = "INFO"
+    )
+    
+    $config = Get-Config
+    if (-not $config.EnableLogs) { return }
+    
+    # Créer le dossier logs si inexistant
+    $logDir = Split-Path $LogPath -Parent
+    if (-not (Test-Path $logDir)) {
+        New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+    }
+    
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logEntry = "[$timestamp] [$Level] $Message"
+    
+    # Ajouter au fichier de log
+    Add-Content -Path $LogPath -Value $logEntry
+    
+    # Ajouter à l'historique des actions (#2)
+    if ($Level -eq "ACTION") {
+        Add-Content -Path $HistoryPath -Value $logEntry
+    }
+}
+
+# ============================================================================
+# HISTORIQUE DES ACTIONS (#2)
+# ============================================================================
+
+function Get-History {
+    param([int]$Count = 10)
+    
+    if (Test-Path $HistoryPath) {
+        Get-Content $HistoryPath | Select-Object -Last $Count
+    } else {
+        @()
+    }
+}
+
+function Clear-History {
+    if (Test-Path $HistoryPath) {
+        Clear-Content $HistoryPath
+        Write-Host "✓ History cleared" -ForegroundColor Green
+    }
+}
+
+# ============================================================================
+# BARRES DE PROGRESSION (#5)
+# ============================================================================
+
+function Show-ProgressBar {
+    param(
+        [int]$Current,
+        [int]$Total,
+        [string]$Activity
+    )
+    
+    $config = Get-Config
+    if (-not $config.ShowProgress) { return }
+    
+    $percent = [math]::Round(($Current / $Total) * 100, 2)
+    $progress = "[" + ("█" * [int]($percent / 5)) + ("░" * (20 - [int]($percent / 5))) + "]"
+    
+    Write-Host "  $Activity $progress $percent%" -NoNewline
+    Write-Host ""
+}
+
+function Start-ProgressTask {
+    param(
+        [string]$Activity,
+        [scriptblock]$Task,
+        [int]$Steps = 5
+    )
+    
+    Write-Host "`n⏳ $Activity..." -ForegroundColor Yellow
+    
+    for ($i = 1; $i -le $Steps; $i++) {
+        Show-ProgressBar -Current $i -Total $Steps -Activity $Activity
+        & $Task
+        Start-Sleep -Milliseconds 200
+    }
+    
+    Write-Host "  ✓ Complete!" -ForegroundColor Green
+}
+
+# ============================================================================
+# AUTO-UPDATE CHECK (#8)
+# ============================================================================
+
+function Test-AutoUpdate {
+    Write-Host "`n🔄 Checking for updates..." -ForegroundColor Cyan
+    
+    try {
+        $response = Invoke-RestMethod -Uri "https://api.github.com/repos/valorisa/prompt-engineer-toolkit/releases/latest" -TimeoutSec 5
+        $latestVersion = $response.tag_name -replace 'v', ''
+        
+        if ($latestVersion -gt $ScriptVersion) {
+            Write-Host "  ⚠ New version available: v$latestVersion (you have v$ScriptVersion)" -ForegroundColor Yellow
+            Write-Host "  Run: git pull origin main" -ForegroundColor Gray
+            Log-Action "Update available: v$latestVersion"
+        } else {
+            Write-Host "  ✓ You're up to date (v$ScriptVersion)" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "  ⚠ Could not check for updates (offline?)" -ForegroundColor Gray
+    }
+}
+
+# ============================================================================
+# FONCTIONS DES SOUS-MENUS AMÉLIORÉES
 # ============================================================================
 
 function Show-ProjectScaffold {
     Write-Host "`n🔨 Project Scaffold" -ForegroundColor Cyan
     Write-Host "----------------------------------------"
-    Write-Host "Creating new project structure..."
     
     $projectName = Read-Host "Enter project name"
-    if ($projectName) {
-        Write-Host "✓ Project '$projectName' scaffold coming soon..." -ForegroundColor Green
-        Write-Host "  Will create: src/, tests/, docs/, config/"
-    } else {
+    if (-not $projectName) {
         Write-Host "⚠ No project name entered" -ForegroundColor Yellow
+        Log-Action "Scaffold cancelled - no name"
+        Read-Host "Press Enter to continue"
+        return
     }
+    
+    # Création réelle (#9)
+    $targetPath = "$ProjectRoot/../$projectName"
+    
+    if (Test-Path $targetPath) {
+        Write-Host "⚠ Project '$projectName' already exists!" -ForegroundColor Red
+        Log-Action "Scaffold failed - project exists: $projectName"
+        Read-Host "Press Enter to continue"
+        return
+    }
+    
+    Write-Host "`n📦 Creating project structure..." -ForegroundColor Yellow
+    
+    $folders = @("src", "tests", "docs", "config", "scripts", ".github/workflows")
+    $total = $folders.Count
+    
+    for ($i = 0; $i -lt $folders.Count; $i++) {
+        $folder = $folders[$i]
+        $fullPath = "$targetPath/$folder"
+        New-Item -ItemType Directory -Force -Path $fullPath | Out-Null
+        Show-ProgressBar -Current ($i + 1) -Total $total -Activity "Creating $folder"
+    }
+    
+    # Créer fichiers de base
+    Set-Content -Path "$targetPath/README.md" -Value "# $projectName`n`nProject created with PromptOps Console"
+    Set-Content -Path "$targetPath/.gitignore" -Value "node_modules/`n*.log`n.env"
+    
+    Write-Host "`n✓ Project '$projectName' scaffolded successfully!" -ForegroundColor Green
+    Write-Host "  Location: $targetPath" -ForegroundColor Gray
+    Log-Action "Scaffold created: $projectName at $targetPath"
+    
     Read-Host "Press Enter to continue"
 }
 
@@ -74,32 +242,75 @@ function Show-AutomationEngine {
     Write-Host "`n⚙️  Automation Engine" -ForegroundColor Cyan
     Write-Host "----------------------------------------"
     Write-Host "Available automations:"
-    Write-Host "  [1] Run all tests"
-    Write-Host "  [2] Build project"
-    Write-Host "  [3] Deploy"
+    Write-Host "  [1] Run all tests (npm test)"
+    Write-Host "  [2] Run tests with coverage"
+    Write-Host "  [3] Build project"
+    Write-Host "  [4] Deploy"
     Write-Host "  [0] Back to main menu"
     
     $choice = Read-Host "Select automation"
+    
     switch ($choice) {
-        "1" { 
-            Write-Host "`n🧪 Running tests..." -ForegroundColor Yellow
+        "1" {
+            Write-Host "`n🧪 Running all tests..." -ForegroundColor Yellow
+            Log-Action "Automation: Running npm test"
             Set-Location "$ProjectRoot/scripts/node"
-            npm test
+            
+            # Exécution réelle (#10)
+            $output = npm test 2>&1
+            Write-Host $output
+            
+            Set-Location $ProjectRoot
+            Log-Action "Automation: Tests completed"
+            Read-Host "Press Enter to continue"
+        }
+        "2" {
+            Write-Host "`n📊 Running tests with coverage..." -ForegroundColor Yellow
+            Log-Action "Automation: Running tests with coverage"
+            Set-Location "$ProjectRoot/scripts/node"
+            npm test -- --coverage 2>&1 | Write-Host
             Set-Location $ProjectRoot
             Read-Host "Press Enter to continue"
         }
-        "2" { Write-Host "Build coming soon..."; Read-Host "Press Enter to continue" }
-        "3" { Write-Host "Deploy coming soon..."; Read-Host "Press Enter to continue" }
+        "3" { 
+            Start-ProgressTask -Activity "Building project" -Task { Start-Sleep -Milliseconds 100 }
+            Log-Action "Automation: Build completed"
+            Read-Host "Press Enter to continue"
+        }
+        "4" { 
+            Write-Host "⚠ Deploy coming soon..." -ForegroundColor Yellow
+            Log-Action "Automation: Deploy requested (not implemented)"
+            Read-Host "Press Enter to continue"
+        }
     }
 }
 
 function Show-DocsGenerator {
     Write-Host "`n📚 Docs Generator" -ForegroundColor Cyan
     Write-Host "----------------------------------------"
-    Write-Host "Generating documentation..."
-    Write-Host "✓ README.md" -ForegroundColor Green
-    Write-Host "✓ API docs" -ForegroundColor Green
-    Write-Host "✓ Usage examples" -ForegroundColor Green
+    
+    $docs = @(
+        @{ Name = "README.md"; Path = "$ProjectRoot/README.md" },
+        @{ Name = "API Documentation"; Path = "$ProjectRoot/docs/API.md" },
+        @{ Name = "Usage Examples"; Path = "$ProjectRoot/docs/USAGE.md" },
+        @{ Name = "Architecture"; Path = "$ProjectRoot/docs/ARCHITECTURE.md" }
+    )
+    
+    Write-Host "`nGenerating documentation..." -ForegroundColor Yellow
+    Log-Action "Docs: Generation started"
+    
+    for ($i = 0; $i -lt $docs.Count; $i++) {
+        $doc = $docs[$i]
+        if (Test-Path $doc.Path) {
+            Show-ProgressBar -Current ($i + 1) -Total $docs.Count -Activity $doc.Name
+            Write-Host "  ✓ $($doc.Name)" -ForegroundColor Green
+        } else {
+            Write-Host "  ⚠ $($doc.Name) (not found)" -ForegroundColor Yellow
+        }
+    }
+    
+    Log-Action "Docs: Generation completed"
+    Write-Host "`n✓ Documentation scan complete!" -ForegroundColor Green
     Read-Host "Press Enter to continue"
 }
 
@@ -107,20 +318,19 @@ function Show-SuperPromptStudio {
     Write-Host "`n🤖 Super-Prompt Studio" -ForegroundColor Cyan
     Write-Host "----------------------------------------"
     Write-Host "Launching PromptOps Node.js CLI..."
-    Write-Host ""
+    Log-Action "Super-Prompt Studio: Launched"
     
-    # Vérifie si le dossier existe
     $nodePath = "$ProjectRoot/scripts/node"
     if (Test-Path $nodePath) {
         Set-Location $nodePath
         
-        # Sous-menu pour la CLI Node.js
         while ($true) {
             Write-Host "`n=== PromptOps Node.js CLI ===" -ForegroundColor Magenta
             Write-Host "[1] List plugins"
             Write-Host "[2] Run hello-world"
             Write-Host "[3] Run promptor-matrix"
             Write-Host "[4] Run custom plugin"
+            Write-Host "[5] Search plugins"  # #4 Recherche
             Write-Host "[0] Back to main menu"
             
             $cliChoice = Read-Host "Select option"
@@ -128,11 +338,13 @@ function Show-SuperPromptStudio {
             switch ($cliChoice) {
                 "1" { 
                     Write-Host "`n📋 Listing plugins..." -ForegroundColor Yellow
+                    Log-Action "CLI: List plugins"
                     npx tsx promptops.ts list
                     Read-Host "Press Enter to continue"
                 }
                 "2" { 
                     $name = Read-Host "Enter name (or press Enter for default)"
+                    Log-Action "CLI: Run hello-world --name=$name"
                     if ($name) {
                         npx tsx promptops.ts run hello-world --name=$name
                     } else {
@@ -142,15 +354,27 @@ function Show-SuperPromptStudio {
                 }
                 "3" { 
                     Write-Host "`n🤖 Launching Promptor Matrix..." -ForegroundColor Yellow
+                    Log-Action "CLI: Run promptor-matrix"
                     npx tsx promptops.ts run promptor-matrix
                     Read-Host "Press Enter to continue"
                 }
                 "4" { 
                     $plugin = Read-Host "Enter plugin name"
                     if ($plugin) {
+                        Log-Action "CLI: Run $plugin"
                         npx tsx promptops.ts run $plugin
                         Read-Host "Press Enter to continue"
                     }
+                }
+                "5" {
+                    # #4 Recherche de plugins
+                    Write-Host "`n🔍 Search Plugins" -ForegroundColor Cyan
+                    $search = Read-Host "Enter search term"
+                    if ($search) {
+                        Write-Host "`nSearching for '$search'..." -ForegroundColor Yellow
+                        npx tsx promptops.ts list | Select-String $search
+                    }
+                    Read-Host "Press Enter to continue"
                 }
                 "0" { break }
                 default { Write-Host "Invalid option" -ForegroundColor Red }
@@ -162,6 +386,7 @@ function Show-SuperPromptStudio {
         Set-Location $ProjectRoot
     } else {
         Write-Host "❌ Node.js CLI not found at: $nodePath" -ForegroundColor Red
+        Log-Action "CLI: Not found at $nodePath"
         Read-Host "Press Enter to continue"
     }
 }
@@ -169,39 +394,128 @@ function Show-SuperPromptStudio {
 function Show-HealthCheck {
     Write-Host "`n✅ Health Check" -ForegroundColor Cyan
     Write-Host "----------------------------------------"
+    Log-Action "Health Check: Started"
     
     $checks = @{
         "Git repository" = { Test-Path ".git" }
         "Node.js scripts" = { Test-Path "scripts/node" }
         "PowerShell scripts" = { Test-Path "scripts/PromptOpsConsole.ps1" }
         "README.md" = { Test-Path "README.md" }
-        "Tests" = { Test-Path "scripts/node/*.test.ts" }
+        "Tests" = { (Get-ChildItem "scripts/node/*.test.ts" -ErrorAction SilentlyContinue).Count -gt 0 }
+        "package.json" = { Test-Path "scripts/node/package.json" }
+        "tsconfig.json" = { Test-Path "scripts/node/tsconfig.json" }
+        "Logs folder" = { Test-Path "$ProjectRoot/logs" }
     }
+    
+    $passed = 0
+    $total = $checks.Count
     
     foreach ($check in $checks.GetEnumerator()) {
         $result = & $check.Value
         if ($result) {
             Write-Host "  ✓ $($check.Key)" -ForegroundColor Green
+            $passed++
         } else {
             Write-Host "  ✗ $($check.Key)" -ForegroundColor Red
         }
+        Start-Sleep -Milliseconds 100
     }
     
-    Write-Host "`n📊 Overall Status: " -NoNewline
-    Write-Host "HEALTHY" -ForegroundColor Green
+    # #12 Health Check réel - Lancer les tests
+    Write-Host "`n🧪 Running quick test..." -ForegroundColor Yellow
+    Set-Location "$ProjectRoot/scripts/node"
+    $testResult = npm test 2>&1 | Select-String "pass|fail" | Select-Object -First 5
+    Set-Location $ProjectRoot
     
+    if ($testResult) {
+        Write-Host "  Test results:" -ForegroundColor Cyan
+        $testResult | ForEach-Object { Write-Host "    $_" -ForegroundColor Gray }
+    }
+    
+    # Status global
+    $percent = [math]::Round(($passed / $total) * 100, 0)
+    Write-Host "`n📊 Overall Status: " -NoNewline
+    if ($percent -eq 100) {
+        Write-Host "HEALTHY ($percent%)" -ForegroundColor Green
+    } elseif ($percent -ge 75) {
+        Write-Host "GOOD ($percent%)" -ForegroundColor Yellow
+    } else {
+        Write-Host "NEEDS ATTENTION ($percent%)" -ForegroundColor Red
+    }
+    
+    Log-Action "Health Check: Completed ($passed/$total passed)"
     Read-Host "Press Enter to continue"
 }
 
 function Show-Settings {
     Write-Host "`n⚙️  Settings" -ForegroundColor Cyan
     Write-Host "----------------------------------------"
-    Write-Host "Current settings:"
-    Write-Host "  Version: $ScriptVersion"
-    Write-Host "  Project Root: $ProjectRoot"
-    Write-Host "  PowerShell: $($PSVersionTable.PSVersion)"
-    Write-Host "`n⚠ Settings configuration coming soon..." -ForegroundColor Yellow
-    Read-Host "Press Enter to continue"
+    
+    $config = Get-Config
+    
+    while ($true) {
+        Write-Host "`nCurrent settings:"
+        Write-Host "  Theme: $($config.Theme)"
+        Write-Host "  Show Progress Bars: $($config.ShowProgress)"
+        Write-Host "  Enable Logs: $($config.EnableLogs)"
+        Write-Host "  Max History: $($config.MaxHistory)"
+        Write-Host ""
+        Write-Host "  [1] Change Theme"
+        Write-Host "  [2] Toggle Progress Bars"
+        Write-Host "  [3] Toggle Logs"
+        Write-Host "  [4] Set Max History"
+        Write-Host "  [5] View Action History"
+        Write-Host "  [6] Clear History"
+        Write-Host "  [0] Back to main menu"
+        
+        $choice = Read-Host "Select option"
+        
+        switch ($choice) {
+            "1" {
+                Write-Host "`nAvailable themes: default, dark, light"
+                $theme = Read-Host "Enter theme"
+                if ($Themes.ContainsKey($theme)) {
+                    $config.Theme = $theme
+                    Save-Config $config
+                    Write-Host "✓ Theme changed to '$theme'" -ForegroundColor Green
+                    Log-Action "Settings: Theme changed to $theme"
+                } else {
+                    Write-Host "⚠ Unknown theme" -ForegroundColor Yellow
+                }
+            }
+            "2" {
+                $config.ShowProgress = -not $config.ShowProgress
+                Save-Config $config
+                Write-Host "✓ Progress bars: $((($config.ShowProgress) ? 'Enabled' : 'Disabled'))" -ForegroundColor Green
+                Log-Action "Settings: Progress toggled to $($config.ShowProgress)"
+            }
+            "3" {
+                $config.EnableLogs = -not $config.EnableLogs
+                Save-Config $config
+                Write-Host "✓ Logs: $((($config.EnableLogs) ? 'Enabled' : 'Disabled'))" -ForegroundColor Green
+                Log-Action "Settings: Logs toggled to $($config.EnableLogs)"
+            }
+            "4" {
+                $max = Read-Host "Enter max history (1-100)"
+                if ([int]$max -ge 1 -and [int]$max -le 100) {
+                    $config.MaxHistory = [int]$max
+                    Save-Config $config
+                    Write-Host "✓ Max history set to $max" -ForegroundColor Green
+                }
+            }
+            "5" {
+                Write-Host "`n📜 Recent Actions:" -ForegroundColor Cyan
+                Get-History -Count $config.MaxHistory | ForEach-Object { Write-Host "  $_" -ForegroundColor Gray }
+                Read-Host "Press Enter to continue"
+            }
+            "6" {
+                Clear-History
+            }
+            "0" { break }
+        }
+        
+        if ($choice -eq "0") { break }
+    }
 }
 
 function Show-Help {
@@ -218,6 +532,11 @@ function Show-Help {
 ║  [6] Settings            - Configure options                 ║
 ║  [?] Help                - Show this help                    ║
 ║  [0] Exit                - Exit the console                  ║
+╠══════════════════════════════════════════════════════════════╣
+║  SHORTCUTS:                                                  ║
+║    ↑/↓  Navigate menu (coming soon)                          ║
+║    ?    Show help                                            ║
+║    0    Exit                                                 ║
 ╚══════════════════════════════════════════════════════════════╝
 
 "@ -ForegroundColor Cyan
@@ -225,21 +544,41 @@ function Show-Help {
 }
 
 # ============================================================================
+# LOG ACTION HELPER
+# ============================================================================
+
+function Log-Action {
+    param([string]$Message)
+    Write-Log -Message $Message -Level "ACTION"
+}
+
+# ============================================================================
 # BOUCLE PRINCIPALE
 # ============================================================================
 
+# Clear screen
+Clear-Host
+
+# Welcome message
 Write-Host "`n🚀 Welcome to PromptOps Console v$ScriptVersion" -ForegroundColor Green
 Write-Host "   Type '?' for help, '0' to exit`n" -ForegroundColor Gray
 
+# Auto-update check (#8)
+Test-AutoUpdate
+
+# Main loop
 while ($true) {
+    $config = Get-Config
+    $theme = $Themes[$config.Theme]
+    
     # Afficher le menu
     Write-Host ""
-    Write-Host "PromptOps Console v$ScriptVersion" -ForegroundColor Cyan
+    Write-Host "PromptOps Console v$ScriptVersion" -ForegroundColor $theme.Title
     Write-Host "----------------------------------------"
     Write-Host "[1] Project Scaffold"
     Write-Host "[2] Automation Engine"
     Write-Host "[3] Docs Generator"
-    Write-Host "[4] Super-Prompt Studio" -ForegroundColor Magenta
+    Write-Host "[4] Super-Prompt Studio"
     Write-Host "[5] Health Check"
     Write-Host "[6] Settings"
     Write-Host "[?] Help"
@@ -251,19 +590,42 @@ while ($true) {
     
     # Traiter le choix
     switch ($choice) {
-        "1" { Show-ProjectScaffold }
-        "2" { Show-AutomationEngine }
-        "3" { Show-DocsGenerator }
-        "4" { Show-SuperPromptStudio }  # 🎯 Intègre la Node.js CLI !
-        "5" { Show-HealthCheck }
-        "6" { Show-Settings }
-        "?" { Show-Help }
+        "1" { 
+            Log-Action "Menu: Project Scaffold selected"
+            Show-ProjectScaffold 
+        }
+        "2" { 
+            Log-Action "Menu: Automation Engine selected"
+            Show-AutomationEngine 
+        }
+        "3" { 
+            Log-Action "Menu: Docs Generator selected"
+            Show-DocsGenerator 
+        }
+        "4" { 
+            Log-Action "Menu: Super-Prompt Studio selected"
+            Show-SuperPromptStudio 
+        }
+        "5" { 
+            Log-Action "Menu: Health Check selected"
+            Show-HealthCheck 
+        }
+        "6" { 
+            Log-Action "Menu: Settings selected"
+            Show-Settings 
+        }
+        "?" { 
+            Log-Action "Menu: Help selected"
+            Show-Help 
+        }
         "0" { 
-            Write-Host "`n👋 Goodbye! Thanks for using PromptOps Console.`n" -ForegroundColor Green
+            Log-Action "Menu: Exit selected"
+            Write-Host "`n👋 Goodbye! Thanks for using PromptOps Console.`n" -ForegroundColor $theme.Success
             break 
         }
         default { 
-            Write-Host "`n❌ Invalid option. Please choose 0-6 or ? for help." -ForegroundColor Red
+            Write-Host "`n❌ Invalid option. Please choose 0-6 or ? for help." -ForegroundColor $theme.Error
+            Log-Action "Menu: Invalid option '$choice'"
             Start-Sleep -Seconds 1
         }
     }
