@@ -20,3 +20,13 @@ dist/
 testResults.xml
 examples/
 *.bundle
+
+# Node.js build output (specific paths)
+scripts/node/dist/
+scripts/node/node_modules/
+*.js.map
+*.d.ts
+
+# OS files
+.DS_Store
+Thumbs.db
