@@ -30,3 +30,12 @@ scripts/node/node_modules/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Logs (runtime generated)
+logs/
+*.log
+logs/console-history.log
+logs/promptops-console.log
+
+# Config files (user-specific)
+.promptops-config.json
