@@ -24,11 +24,11 @@ param(
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 
-# ✅ WRAPPER DANS TRY-CATCH POUR CI/CD
+# ✅ WRAPPER DANS TRY-CATCH POUR CI/CD (headless environments)
 try {
     [System.Console]::TreatControlCAsInput = $true
 } catch {
-# Ignorer en environnement headless (CI/CD, Docker, etc.)
+    # Ignorer en environnement headless (CI/CD, Docker, etc.)
 }
 
 # ============================================================================
@@ -257,6 +257,7 @@ function Start-ProgressTask {
 function Test-AutoUpdate {
     Write-Host "`n🔄 Checking for updates..." -ForegroundColor Cyan
     try {
+        # ✅ CORRECTION: URL sans espaces trailing
         $response = Invoke-RestMethod -Uri "https://api.github.com/repos/valorisa/prompt-engineer-toolkit/releases/latest" -TimeoutSec 5
         $latestVersion = $response.tag_name -replace 'v', ''
         if ($latestVersion -gt $ScriptVersion) {
@@ -715,7 +716,14 @@ function Show-Help {
 # ============================================================================
 # BOUCLE PRINCIPALE
 # ============================================================================
-Clear-Host
+
+# ✅ CORRECTION CI/CD: Clear-Host wrapper pour environnements headless
+try {
+    Clear-Host
+} catch {
+    # Ignorer si Clear-Host échoue (CI/CD, Docker, etc.)
+}
+
 Show-Header -Title "Welcome to PromptOps Console" -Version $ScriptVersion
 Test-AutoUpdate
 
