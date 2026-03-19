@@ -40,6 +40,64 @@ $LogPath = "$ProjectRoot/logs/promptops-console.log"
 $ConfigPath = "$ProjectRoot/.promptops-config.json"
 $HistoryPath = "$ProjectRoot/logs/console-history.log"
 
+# ============================================================================
+# DÉTECTION ROBUSTE DU MODE INTERACTIF / CI
+# ============================================================================
+$script:IsCI = (($env:GITHUB_ACTIONS -eq 'true') -or ($env:CI -eq 'true'))
+
+$script:IsNonInteractiveSession = $false
+try {
+    $cmdLine = [string]::Join(' ', [Environment]::GetCommandLineArgs())
+    $script:IsNonInteractiveSession = ($cmdLine -match '(?i)(^|\s)-noninteractive(\s|$)')
+} catch {
+    $script:IsNonInteractiveSession = $false
+}
+
+$script:CanPrompt = $true
+try {
+    $script:CanPrompt = -not [Console]::IsInputRedirected
+} catch {
+    $script:CanPrompt = [Environment]::UserInteractive
+}
+
+if ($script:IsNonInteractiveSession) {
+    $script:CanPrompt = $false
+}
+
+# ============================================================================
+# FAST-PATHS CI / TESTS (évite les boucles interactives)
+# ============================================================================
+# IMPORTANT: return (pas exit) pour ne pas tuer le process Pester
+if ($Version.IsPresent) {
+    Write-Output $ScriptVersion
+    return
+}
+
+if ($Help.IsPresent) {
+    Write-Output @"
+PromptOps Console v$ScriptVersion
+Usage:
+  ./scripts/PromptOpsConsole.ps1 -Help
+  ./scripts/PromptOpsConsole.ps1 -Version
+  ./scripts/PromptOpsConsole.ps1
+"@
+    return
+}
+
+# Si lancé en mode non interactif, on sort proprement
+if (-not $script:CanPrompt) {
+    Write-Output "PromptOps Console v$ScriptVersion"
+    Write-Output "Non-interactive mode detected. Exiting."
+    return
+}
+
+# En CI, si lancé sans argument explicite, on évite toute interaction
+if ($script:IsCI -and $PSBoundParameters.Count -eq 0) {
+    Write-Output "PromptOps Console v$ScriptVersion"
+    Write-Output "CI mode detected. Exiting interactive console."
+    return
+}
+
 # Thèmes de couleurs
 $Themes = @{
     "default" = @{
@@ -151,16 +209,19 @@ function Get-BorderLine {
 
 function Read-MenuInput {
     param([string]$Prompt = "Select option")
+    if (-not $script:CanPrompt) { return "0" }
     return Read-Host "  $Prompt"
 }
 
 function Read-Input {
     param([string]$Prompt)
+    if (-not $script:CanPrompt) { return "" }
     return Read-Host "  $Prompt"
 }
 
 function Wait-Enter {
     param([string]$Message = "Press Enter to continue")
+    if (-not $script:CanPrompt) { return }
     [void](Read-Host "  $Message")
 }
 
@@ -257,7 +318,6 @@ function Start-ProgressTask {
 function Test-AutoUpdate {
     Write-Host "`n🔄 Checking for updates..." -ForegroundColor Cyan
     try {
-        # ✅ CORRECTION: URL sans espaces trailing
         $response = Invoke-RestMethod -Uri "https://api.github.com/repos/valorisa/prompt-engineer-toolkit/releases/latest" -TimeoutSec 5
         $latestVersion = $response.tag_name -replace 'v', ''
         if ($latestVersion -gt $ScriptVersion) {
@@ -732,6 +792,13 @@ while ($true) {
     $theme = $Themes[$config.Theme]
     Show-Menu -Version $ScriptVersion
     $choice = Read-MenuInput -Prompt "Select an option"
+
+    # Garde-fou anti-boucle
+    if (-not $script:CanPrompt -and [string]::IsNullOrWhiteSpace($choice)) {
+        Write-Host "Non-interactive mode detected, exiting menu loop." -ForegroundColor Yellow
+        break
+    }
+
     switch ($choice) {
         "1" {
             Log-Action "Menu: Project Scaffold selected"
@@ -772,6 +839,7 @@ while ($true) {
             Start-Sleep -Seconds 1
         }
     }
+
     if ($choice -eq "0") { break }
 }
 

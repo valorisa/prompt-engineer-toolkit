@@ -10,8 +10,8 @@ Describe "PromptOpsConsole.ps1" {
 
     It "Should return version with -Version flag" {
         $output = & $ScriptPath -Version
-        $output | Should -Match "^\d+\.\d+\.\d+$"
+        $output.ToString().Trim() | Should -Match "^\d+\.\d+\.\d+$"
     }
 }
-# TODO(v2): Add integration tests for menu navigation.
 
+# TODO(v2): Add integration tests for menu navigation.
