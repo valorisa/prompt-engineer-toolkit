@@ -39,3 +39,6 @@ logs/promptops-console.log
 
 # Config files (user-specific)
 .promptops-config.json
+
+#Backup directories
+backup/
