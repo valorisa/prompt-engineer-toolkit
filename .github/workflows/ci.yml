@@ -32,25 +32,25 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           check_together: 'yes'
-          scan: "scripts/"
+          scandir: "scripts/"
 
   test-powershell:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        pwsh: [5.1, 7.4]
-        exclude:
-          - os: ubuntu-latest
-            pwsh: 5.1
-          - os: macos-latest
-            pwsh: 5.1
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Pester
-        run: pwsh -Command "Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser"
+        shell: pwsh
+        run: Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+
       - name: Run Tests
-        run: pwsh -Command "Invoke-Pester ./tests -CI -Output Detailed"
+        shell: pwsh
+        run: Invoke-Pester ./tests -CI -Output Detailed -ErrorAction Stop
 
   test-python:
     runs-on: ubuntu-latest

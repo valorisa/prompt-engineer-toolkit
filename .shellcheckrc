@@ -1,3 +1,4 @@
 severity=warning
 enable=all
+disable=SC2250
 shell=bash
