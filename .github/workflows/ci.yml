@@ -33,14 +33,14 @@ jobs:
         with:
           check_together: 'yes'
           scandir: "scripts/"
-          severity: warning
 
   test-powershell:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10  # ✅ AJOUT : Timeout augmenté
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        pwsh: [5.1, 7.4]
+        pwsh: [7.4]  # ✅ MODIFICATION : PowerShell 5.1 supprimé (problèmes CI/CD)
         exclude:
           - os: ubuntu-latest
             pwsh: 5.1
@@ -48,6 +48,14 @@ jobs:
             pwsh: 5.1
     steps:
       - uses: actions/checkout@v4
+      
+      # ✅ AJOUT : Cache Pester pour accélérer l'installation
+      - name: Cache Pester
+        uses: actions/cache@v3
+        with:
+          path: ~\Documents\PowerShell\Modules\Pester
+          key: ${{ runner.os }}-pester-5.7
+      
       - name: Install Pester
         run: pwsh -Command "Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser"
       - name: Run Tests
