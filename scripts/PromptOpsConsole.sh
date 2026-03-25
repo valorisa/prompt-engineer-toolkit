@@ -85,7 +85,7 @@ show_menu() {
     echo "║  [1] Project Scaffold            ║"
     echo "║  [2] Automation Engine           ║"
     echo "║  [3] Docs Generator              ║"
-    echo -e "║  [4] Super-Prompt Studio         \e[1;37;40mFEATURE\e[0m                          ║"
+    echo "║  [4] Super-Prompt Studio         ║"                                  ║"
     echo "║  [5] Health Check                ║"
     echo "║  [6] Settings                    ║"
     echo "║  [?] Help                        ║"
@@ -136,9 +136,9 @@ show_project_scaffold() {
     echo "" >> "${target_path}/README.md"
     echo "Project created with PromptOps Console" >> "${target_path}/README.md"
 
-    echo "node_modules/" > "${target_path}/.gitignore"
-    echo "*.log" >> "${target_path}/.gitignore"
-    echo ".env" >> "${target_path}/.gitignore"
+    echo "node_modules/" > "${target_path}/gitignore"
+    echo ".log" >> "${target_path}/gitignore"
+    echo ".env" >> "${target_path}/gitignore"
 
     echo -e "\e[32m  ✓ Project '${project_name}' scaffolded successfully!\e[0m"
     echo -e "\e[90m  Location: ${target_path}\e[0m"
