@@ -7,5 +7,4 @@ export type { IPlugin, PluginManifest } from './interfaces/IPlugin.js';
 export { PluginLoader } from './loaders/PluginLoader.js';
 export { HelloWorldPlugin } from './examples/hello-world/HelloWorldPlugin.js';
 export { PromptorPlugin } from './builtins/PromptorPlugin.js';
-export { PromptOptimizer } from './optimizer/PromptOptimizer.js';
-
+export { PromptOptimizer } from './builtins/optimizer/PromptOptimizer.js';
