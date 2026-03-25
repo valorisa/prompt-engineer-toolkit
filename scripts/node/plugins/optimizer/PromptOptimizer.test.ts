@@ -94,7 +94,7 @@ describe('PromptOptimizer', () => {
       const result = await plugin.execute(invalidInput);
       
       assert.equal(result.success, false);
-      assert.ok(result.improvements.includes('An error occurred'));
+      assert.ok(result.improvements.includes('An error occurred during optimization'));
     });
 
     it('should return metadata with token count', async () => {
