@@ -11,7 +11,9 @@
     "test:all": "tsx --test --test-reporter=spec \"**/*.test.ts\"",
     "test:watch": "tsx --test --watch \"**/*.test.ts\"",
     "lint": "echo 'No linting configured'",
-    "build": "tsc"
+    "build": "tsc",
+	"test:optimizer": "tsx --test --test-reporter=spec plugins/optimizer/*.test.ts",
+	"test:plugin": "npm run test -- --filter=\"*optimizer*\""
   },
   "author": "valorisa",
   "license": "MIT",

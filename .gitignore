@@ -42,3 +42,6 @@ logs/promptops-console.log
 
 # Backup directories
 backup/
+
+# Plugins build outputs
+plugins/*/dist/
