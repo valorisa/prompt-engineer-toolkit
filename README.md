@@ -2,7 +2,7 @@
 
 > **Production-grade framework for super-prompt engineering, cross-platform automation, and AI workflow orchestration.**
 
-![Release](https://img.shields.io/badge/release-v2.1.0-blue)
+![Release](https://img.shields.io/badge/release-v2.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![CI](https://github.com/valorisa/prompt-engineer-toolkit/actions/workflows/ci.yml/badge.svg)
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
