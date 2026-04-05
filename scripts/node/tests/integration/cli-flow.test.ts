@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
 
 describe('Integration: CLI Flow', () => {
   // Chemin vers le CLI (ajuste selon ton architecture)
-  const CLI_PATH = 'tsx promptops.ts';
+  const CLI_PATH = 'npx tsx promptops.ts';
 
   describe('promptops run', () => {
     it('should execute hello-world plugin successfully', async () => {
