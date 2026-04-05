@@ -246,7 +246,7 @@ Confirm execution? (y/n) y
 Le menu principal offre 6 modules :
 
 ```text
-PromptOps Console v1.0.0
+PromptOps Console v2.2.0
 ------------------------------------------
 [1] Project Scaffold     - New repo setup
 [2] Automation Engine    - CI/CD & scripts
