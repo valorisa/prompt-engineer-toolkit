@@ -51,17 +51,23 @@ describe('PromptorPlugin', () => {
     it('should return success result', async () => {
       const result = await plugin.execute({});
       assert.ok(typeof result === 'object');
-      assert.strictEqual((result as any).success, true);
+      assert.ok(result !== null);
+      const obj = result as Record<string, unknown>;
+      assert.strictEqual(obj.success, true);
     });
 
     it('should return matrix in result', async () => {
       const result = await plugin.execute({});
-      assert.ok((result as any).matrix?.length > 0);
+      const obj = result as Record<string, unknown>;
+      assert.ok(typeof obj.matrix === 'string');
+      assert.ok((obj.matrix as string).length > 0);
     });
 
     it('should return instructions in result', async () => {
       const result = await plugin.execute({});
-      assert.ok((result as any).instructions?.includes('Copier-coller'));
+      const obj = result as Record<string, unknown>;
+      assert.ok(typeof obj.instructions === 'string');
+      assert.ok((obj.instructions as string).includes('Copier-coller'));
     });
   });
 

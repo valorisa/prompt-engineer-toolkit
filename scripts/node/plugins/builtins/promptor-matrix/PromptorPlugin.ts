@@ -32,7 +32,7 @@ export class PromptorPlugin implements IPlugin {
   /**
    * Exécution : affiche la matrice pour l'utilisateur
    */
-  async execute(input: unknown): Promise<unknown> {
+  async execute(input: unknown): Promise<{ success: boolean; matrix: string; instructions: string }> {
     await this.initialize();
     
     // En-tête
@@ -55,7 +55,7 @@ export class PromptorPlugin implements IPlugin {
     
     return { 
       success: true, 
-      matrix: this.matrix,
+      matrix: String(this.matrix),
       instructions: 'Copier-coller dans ton LLM préféré'
     };
   }
