@@ -45,3 +45,6 @@ backup/
 
 # Plugins build outputs
 plugins/*/dist/
+
+# Secrets API_KEYS
+.env
